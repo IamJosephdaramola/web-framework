@@ -1,40 +1,34 @@
-import axios, { AxiosResponse } from 'axios';
-import { Eventing } from './Eventing';
+import { Eventing } from "./Eventing";
+import { Attributes } from "./Attributes";
+import { Model } from "./Model";
+import { ApiSync } from "./ApiSync";
+import { Collection } from "./Collection";
 
-interface UserProps {
+export interface UserProps {
   id?: number;
   name?: string;
   age?: number;
 }
 
-export class User {
-  public events: Eventing = new Eventing();
+const rootUrl = "http://localhost:3000/users";
 
-  constructor(private data: UserProps) {}
-
-  get(propName: string): number | string {
-    return this.data[propName];
-  }
-
-  set(update: UserProps): void {
-    Object.assign(this.data, update);
-  }
-
-  fetch(): void {
-    axios.get(`http://localhost:3000/users/${this.get('id')}`).then(
-      (response: AxiosResponse): void => {
-        this.set(response.data);
-      }
+export class User extends Model<UserProps> {
+  static buildUser(attrs: UserProps): User {
+    return new User(
+      new Attributes<UserProps>(attrs),
+      new Eventing(),
+      new ApiSync<UserProps>(rootUrl)
     );
   }
 
-  save(): void {
-    const id = this.get('id');
+  static buildUserCollection(): Collection<User, UserProps> {
+    return new Collection<User, UserProps>(rootUrl, (json: UserProps) =>
+      User.buildUser(json)
+    );
+  }
 
-    if (id) {
-      axios.put(`http://localhost:3000/users/${id}`, this.data);
-    } else {
-      axios.post('http://localhost:3000/users', this.data);
-    }
+  setRandomAge(): void {
+    const age = Math.round(Math.random() * 100);
+    this.set({ age });
   }
 }
